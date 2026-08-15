@@ -7,14 +7,14 @@
 // @match        *://*.hga050.com/*
 // @grant        none
 // @run-at       document-idle
-// @downloadURL  https://REPLACE_DOMAIN/redcard.user.js
-// @updateURL    https://REPLACE_DOMAIN/redcard.user.js
+// @downloadURL  https://mon328881.github.io/hga050-redcard-monitor/redcard.user.js
+// @updateURL    https://mon328881.github.io/hga050-redcard-monitor/redcard.user.js
 // ==/UserScript==
 
 (function () {
   "use strict";
   // 部署后把域名写死；安装页也会提示。书签方案不依赖此文件。
-  var SCRIPT_URL = "https://REPLACE_DOMAIN/redcard-monitor.js";
+  var SCRIPT_URL = "https://mon328881.github.io/hga050-redcard-monitor/redcard-monitor.js";
 
   function boot() {
     if (window.__HGA_REDCARD_MONITOR__ || /REPLACE_DOMAIN/.test(SCRIPT_URL)) return;
