@@ -1,0 +1,28 @@
+# 公网部署（静态站）
+
+把 `public/` 目录发布到任意静态托管即可。别人打开你的公网地址收藏书签，无需同一 WiFi。
+
+## 推荐：Cloudflare Pages / Vercel / Netlify
+
+### Vercel（最快）
+```bash
+npx vercel login
+npx vercel public --prod
+```
+发布后得到类似 `https://xxx.vercel.app` 的地址，把链接发给对方。
+
+### Netlify
+```bash
+npx netlify deploy --dir=public --prod
+```
+
+### Cloudflare Pages
+- 控制台上传 `public` 目录，或连接 Git 仓库指向 `public`
+
+## 对方怎么用
+1. 打开你的公网安装页  
+2. 收藏「红牌监控」书签  
+3. 自己登录 hga050 → 滚球 → 点书签  
+
+## 原理
+书签只在对方手机里的 hga050 页面注入脚本，监控的是对方自己的登录会话。公网站只负责分发脚本，不能代替登录。

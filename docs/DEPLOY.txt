@@ -1,0 +1,14 @@
+# GitHub Pages 部署说明
+
+本仓库使用 `docs/` 作为静态站点根目录。
+
+## 自动部署
+推送到 `main` 后，GitHub Actions 会发布 Pages。
+
+首次需要在仓库设置里打开 Pages：
+Settings → Pages → Source 选 **GitHub Actions**
+
+## 访问地址
+`https://<用户名>.github.io/<仓库名>/`
+
+把该地址发给其他人即可安装书签。

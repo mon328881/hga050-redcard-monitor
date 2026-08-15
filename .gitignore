@@ -1,0 +1,12 @@
+node_modules/
+.vercel/
+.DS_Store
+*.log
+.env
+.env.*
+user
+hga_rc_phone.png
+phone-*.js
+server.js
+serve.js
+package-lock.json
