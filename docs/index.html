@@ -13,7 +13,6 @@
       --text: #eef3f8;
       --muted: #93a0b0;
       --red: #e23d2c;
-      --green: #2fbf71;
     }
     * { box-sizing: border-box; }
     body {
@@ -27,8 +26,7 @@
       line-height: 1.55;
     }
     .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
-    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: .02em; }
-    .lead { color: var(--muted); margin: 0 0 22px; font-size: 15px; }
+    h1 { margin: 0 0 16px; font-size: 28px; letter-spacing: .02em; }
     .card {
       background: var(--card);
       border: 1px solid var(--line);
@@ -87,6 +85,18 @@
       font-size: 15px;
       font-weight: 700;
     }
+    textarea {
+      margin-top: 12px;
+      min-height: 140px;
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #0d1117;
+      color: #d7e0ea;
+      padding: 10px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
     details { margin-top: 6px; }
     summary { cursor: pointer; color: var(--muted); font-size: 14px; }
   </style>
@@ -95,22 +105,28 @@
   <div class="wrap">
     <h1>滚球红牌监控</h1>
 
+    <section class="card warn">
+      <h2>华为手机提示「脚本解析失败」？</h2>
+      <p class="hint" style="margin:0">不要点「打开脚本文件」。请用下面<strong>复制完整脚本</strong>，在 Via 里手动添加。已去掉易导致解析失败的中文标题和 <code style="font-family:inherit">@match</code>。</p>
+    </section>
+
     <section class="card ok">
-      <h2>手机这样装</h2>
+      <h2>推荐安装（Via 手动添加）</h2>
       <ol>
-        <li>先安装 <strong>Via 浏览器</strong>（官网 viayoo.com）</li>
-        <li>用 Via 打开本页，点红色按钮复制脚本</li>
-        <li>Via 右上角 <strong>≡ → 设置 → 脚本 → 添加脚本</strong>：匹配填 <code style="font-family:inherit">*hga050.com*</code>，内容粘贴刚才复制的代码，保存并打开开关</li>
-        <li>仍用 Via 打开并登录 <strong>hga050.com</strong>，进入滚球，等 2 秒出现监控面板</li>
+        <li>安装 <strong>Via</strong>（官网 viayoo.com）</li>
+        <li>用 Via 打开本页，点红色按钮复制</li>
+        <li>Via → <strong>设置 → 脚本 → + 添加</strong></li>
+        <li><strong>匹配规则留空</strong>（脚本里已带网址），把复制内容整段粘贴到脚本框 → 保存 → 打开开关</li>
+        <li>用 Via 打开并登录 <strong>hga050.com</strong>，进滚球，等约 2 秒出现面板</li>
       </ol>
-      <button class="copy" id="copyScript" type="button" style="background:#e23d2c;margin-top:12px">复制脚本（去 Via 里粘贴）</button>
+      <button class="copy" id="copyScript" type="button" style="background:#e23d2c;margin-top:12px">复制完整脚本</button>
       <a class="btn btn-ghost" href="https://viayoo.com/" target="_blank" rel="noopener">下载 Via 浏览器</a>
-      <textarea id="viaCode" readonly style="margin-top:12px;min-height:88px;width:100%;border-radius:12px;border:1px solid var(--line);background:#0d1117;color:#d7e0ea;padding:10px;font-size:12px"></textarea>
+      <textarea id="viaCode" readonly></textarea>
     </section>
 
     <section class="card">
-      <h2>安装链接（可收藏）</h2>
-      <p class="hint">必须带仓库名 <code style="font-family:inherit">/hga050-redcard-monitor/</code>。点开如果是代码而不是安装框，请改用上面的「复制脚本」。</p>
+      <h2>备用：直接打开脚本地址</h2>
+      <p class="hint">部分 Via 版本可识别。若仍「解析失败」，请只用上面的复制粘贴。</p>
       <div class="urlbox" id="userscriptUrl"></div>
       <a class="btn btn-ghost" id="installBtn" href="https://mon328881.github.io/hga050-redcard-monitor/redcard.user.js">打开脚本文件</a>
       <button class="copy" id="copyBtn" type="button">复制安装链接</button>
@@ -118,10 +134,10 @@
 
     <section class="card">
       <h2>没有 Via 时</h2>
-      <p class="hint" style="margin-top:0">Firefox 安装油猴插件后，用 Firefox 打开上面的安装链接。</p>
+      <p class="hint" style="margin-top:0">Firefox 装油猴后打开上面的脚本链接。</p>
       <details>
-        <summary>电脑 Chrome 仍可用书签（手机不行）</summary>
-        <p class="hint">在电脑 Chrome 把下面代码存成书签，登录 hga050 滚球后再点。手机请不要用这个。</p>
+        <summary>电脑 Chrome 书签（手机不要用）</summary>
+        <p class="hint">登录 hga050 滚球后再点该书签。</p>
         <div class="urlbox" id="bmCode" style="margin-top:8px;font-weight:500;font-size:12px"></div>
         <button class="copy" id="copyBm" type="button">复制电脑书签代码</button>
       </details>
@@ -141,33 +157,63 @@
       document.getElementById("userscriptUrl").textContent = scriptPage;
       document.getElementById("installBtn").href = scriptPage;
 
-      var viaCode =
-        "(function(){var s=document.createElement('script');s.src='" +
-        monitor.replace(/'/g, "") +
-        "?t='+Date.now();s.charset='utf-8';document.documentElement.appendChild(s);}())";
+      // Via 兼容：只用 @include，元数据全英文，无 @match / @downloadURL
+      var viaCode = [
+        "// ==UserScript==",
+        "// @name         hga050-redcard",
+        "// @namespace    hga-redcard",
+        "// @version      1.2.0",
+        "// @description  live football red card alert",
+        "// @include      *://hga050.com/*",
+        "// @include      *://*.hga050.com/*",
+        "// @run-at       document-end",
+        "// @grant        none",
+        "// ==/UserScript==",
+        "",
+        "(function () {",
+        "  'use strict';",
+        "  var SCRIPT_URL = '" + monitor.replace(/'/g, "") + "';",
+        "  function boot() {",
+        "    if (window.__HGA_REDCARD_MONITOR__) return;",
+        "    var s = document.createElement('script');",
+        "    s.src = SCRIPT_URL + '?t=' + Date.now();",
+        "    s.charset = 'utf-8';",
+        "    (document.head || document.documentElement).appendChild(s);",
+        "  }",
+        "  if (document.readyState === 'loading') {",
+        "    document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 1500); });",
+        "  } else {",
+        "    setTimeout(boot, 1500);",
+        "  }",
+        "})();"
+      ].join("\n");
+
       document.getElementById("viaCode").value = viaCode;
 
-      var loader = "javascript:void" + viaCode;
+      var loader =
+        "javascript:void(function(){var s=document.createElement('script');s.src='" +
+        monitor.replace(/'/g, "") +
+        "?t='+Date.now();s.charset='utf-8';(document.head||document.documentElement).appendChild(s);}())";
       document.getElementById("bmCode").textContent = loader;
 
       function copy(text, btn, ok) {
         var done = function () { btn.textContent = ok; };
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(done).catch(function () {
-            prompt("长按复制", text);
+            prompt("长按全选复制", text);
           });
         } else {
-          prompt("长按复制", text);
+          prompt("长按全选复制", text);
         }
       }
       document.getElementById("copyScript").onclick = function () {
-        copy(viaCode, this, "已复制，去 Via 设置 → 脚本里粘贴");
+        copy(viaCode, this, "已复制，去 Via → 设置 → 脚本里粘贴");
       };
       document.getElementById("copyBtn").onclick = function () {
         copy(scriptPage, this, "已复制");
       };
       document.getElementById("copyBm").onclick = function () {
-        copy(loader, this, "已复制（仅电脑 Chrome）");
+        copy(loader, this, "已复制（仅电脑）");
       };
     })();
   </script>
