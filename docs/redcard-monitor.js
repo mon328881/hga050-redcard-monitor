@@ -70,13 +70,17 @@
     return out.filter((x) => (seen.has(x.gid) ? false : (seen.add(x.gid), true)));
   }
 
-  function ensureAudio() {
+  async function ensureAudio() {
     if (!state.audioCtx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       state.audioCtx = new AC();
     }
-    if (state.audioCtx.state === "suspended") state.audioCtx.resume();
+    if (state.audioCtx.state === "suspended") {
+      try {
+        await state.audioCtx.resume();
+      } catch (_) {}
+    }
     return state.audioCtx;
   }
 
@@ -95,8 +99,8 @@
 
   function playDiBurst() {
     if (state.muted) return;
-    const ctx = ensureAudio();
-    if (!ctx) return;
+    const ctx = state.audioCtx;
+    if (!ctx || ctx.state !== "running") return;
     const now = ctx.currentTime;
     const peak = Math.max(0.08, volumeGain());
     // 急促滴-滴-滴：方波 + 倍频，更容易穿透
@@ -132,6 +136,7 @@
 
   function startAlarm() {
     if (state.muted) return;
+    if (!state.audioCtx || state.audioCtx.state !== "running") return;
     stopAlarm();
     state.alarming = true;
     playDiBurst();
@@ -143,6 +148,20 @@
       playDiBurst();
       markMiniAlarm(true);
     }, 480);
+  }
+
+  async function unlockSound(preview) {
+    state.muted = false;
+    syncSoundButtons();
+    const ctx = await ensureAudio();
+    if (!ctx) {
+      toast("此浏览器不支持网页声音");
+      renderStatus();
+      return false;
+    }
+    if (preview) playDiBurst();
+    renderStatus();
+    return true;
   }
 
   // 兼容旧调用：开声音预览只响一串，不循环
@@ -744,6 +763,20 @@
       vibBtn.textContent = state.vibrateOn ? "震动开" : "震动关";
       vibBtn.className = state.vibrateOn ? "on" : "off";
     }
+    syncSoundButtons();
+  }
+
+  function syncSoundButtons() {
+    const muteBtn = panel.querySelector('[data-act="mute"]');
+    if (muteBtn) {
+      muteBtn.textContent = state.muted ? "取消静音" : "静音";
+      muteBtn.className = state.muted ? "off" : "";
+    }
+    const soundBtn = panel.querySelector('[data-act="sound"]');
+    if (soundBtn) {
+      soundBtn.textContent = state.muted ? "开声音" : "声音开";
+      soundBtn.className = state.muted ? "primary" : "primary on";
+    }
   }
 
   function closeAllSwipes(except) {
@@ -939,7 +972,7 @@
 
   miniBtn.addEventListener("click", function () {
     expand();
-    ensureAudio();
+    unlockSound(false);
   });
 
   panel.addEventListener("click", function (e) {
@@ -975,10 +1008,14 @@
     if (!btn) return;
     const act = btn.getAttribute("data-act");
     if (act === "sound") {
-      ensureAudio();
-      if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
-      beep();
-      toast("声音已开启");
+      unlockSound(true).then(function (ok) {
+        if (ok) {
+          if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+          }
+          toast("声音已开启");
+        }
+      });
     } else if (act === "monitor") {
       state.monitoring = !state.monitoring;
       if (!state.monitoring) stopAlarm();
@@ -993,42 +1030,50 @@
       renderStatus();
     } else if (act === "vol-") {
       state.volume = Math.max(1, state.volume - 1);
-      state.muted = false;
-      ensureAudio();
-      playDiBurst();
-      toast("音量 " + state.volume + "/10" + (state.volume <= 1 ? "（最低）" : ""));
-      renderStatus();
+      unlockSound(true).then(function () {
+        toast("音量 " + state.volume + "/10" + (state.volume <= 1 ? "（最低）" : ""));
+      });
     } else if (act === "vol+") {
       state.volume = Math.min(10, state.volume + 1);
-      state.muted = false;
-      ensureAudio();
-      playDiBurst();
-      toast(
-        "音量 " +
-          state.volume +
-          "/10" +
-          (state.volume >= 10 ? "（网页上限；再大只能调手机系统音量）" : "")
-      );
-      renderStatus();
+      unlockSound(true).then(function () {
+        toast(
+          "音量 " +
+            state.volume +
+            "/10" +
+            (state.volume >= 10 ? "（网页上限；再大只能调手机系统音量）" : "")
+        );
+      });
     } else if (act === "mute") {
       state.muted = !state.muted;
-      btn.textContent = state.muted ? "取消静音" : "静音";
-      if (state.muted) stopAlarm();
+      if (state.muted) {
+        stopAlarm();
+        toast("已静音（红牌仍弹窗，不响）");
+      } else {
+        unlockSound(true).then(function (ok) {
+          toast(ok ? "已取消静音" : "已取消静音（请先点「开声音」）");
+        });
+      }
+      syncSoundButtons();
       renderStatus();
     } else if (act === "test") {
-      ensureAudio();
-      const any = window.__HGA_RC_LAST_MATCHES__ && window.__HGA_RC_LAST_MATCHES__[0];
-      if (any) {
-        onAlert(
-          "测试定位：" + any.teamH + " vs " + any.teamC + "（点击停止滴滴声并定位）",
-          Object.assign({}, any, { testLocate: true }),
-          null
-        );
-      } else {
-        onAlert("测试红牌提醒：弹窗 + 声音 + 震动", { test: true }, null);
-      }
+      unlockSound(false).then(function (ok) {
+        if (!ok) {
+          toast("请先点「开声音」解锁网页声音");
+          return;
+        }
+        const any = window.__HGA_RC_LAST_MATCHES__ && window.__HGA_RC_LAST_MATCHES__[0];
+        if (any) {
+          onAlert(
+            "测试定位：" + any.teamH + " vs " + any.teamC + "（点击停止滴滴声并定位）",
+            Object.assign({}, any, { testLocate: true }),
+            null
+          );
+        } else {
+          onAlert("测试红牌提醒：弹窗 + 声音 + 震动", { test: true }, null);
+        }
+      });
     } else if (act === "collapse") {
-      ensureAudio();
+      unlockSound(false);
       collapse();
     }
   });
@@ -1036,6 +1081,7 @@
   hookAllFrames();
   setInterval(hookAllFrames, 3000);
   startBackupPoll();
+  renderStatus();
 
   window.__HGA_REDCARD_MONITOR__ = {
     panel,
