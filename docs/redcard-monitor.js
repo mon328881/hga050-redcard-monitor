@@ -32,6 +32,7 @@
     alarmTimer: null,
     monitoring: true,
     vibrateOn: true,
+    volume: 10, // 1–10，10 为网页音频上限（仍受系统音量限制）
   };
 
   function pick(block, name) {
@@ -83,25 +84,35 @@
     } catch (_) {}
   }
 
+  function volumeGain() {
+    const lv = Math.max(1, Math.min(10, Number(state.volume) || 10));
+    // 网页音频 Gain 最大约 1.0；超过会削波失真，听感不再明显变大
+    return lv / 10;
+  }
+
   function playDiBurst() {
     if (state.muted) return;
     const ctx = ensureAudio();
     if (!ctx) return;
     const now = ctx.currentTime;
-    // 急促滴-滴-滴
+    const peak = Math.max(0.08, volumeGain());
+    // 急促滴-滴-滴：方波 + 倍频，更容易穿透
     for (let i = 0; i < 3; i++) {
       const t0 = now + i * 0.1;
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "square";
-      o.frequency.value = 1450;
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.28, t0 + 0.008);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.055);
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.start(t0);
-      o.stop(t0 + 0.06);
+      [1450, 2900].forEach(function (freq, k) {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "square";
+        o.frequency.value = freq;
+        const amp = k === 0 ? peak : peak * 0.45;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(amp, t0 + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.055);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(t0);
+        o.stop(t0 + 0.06);
+      });
     }
     buzz([30, 30, 30, 30, 30, 30, 30]);
   }
@@ -667,6 +678,8 @@
     '<button type="button" data-act="monitor" class="on">监控开</button>' +
     '<button type="button" data-act="vibrate" class="on">震动开</button>' +
     '<button type="button" data-act="sound" class="primary">开声音</button>' +
+    '<button type="button" data-act="vol-">音量-</button>' +
+    '<button type="button" data-act="vol+">音量+</button>' +
     '<button type="button" data-act="mute">静音</button>' +
     '<button type="button" data-act="test">测试</button>' +
     '<button type="button" data-act="collapse">收起</button>' +
@@ -708,6 +721,7 @@
     bits.push("最近 " + t);
     bits.push("历史 " + state.history.length);
     if (state.vibrateOn) bits.push("震动");
+    bits.push("音量 " + state.volume + "/10");
     if (state.muted) bits.push("已静音");
     if (state.alarming) bits.push("报警中");
     ui.status.textContent = bits.join(" · ");
@@ -951,6 +965,25 @@
       state.vibrateOn = !state.vibrateOn;
       if (state.vibrateOn) buzz([25, 30, 25]);
       toast(state.vibrateOn ? "震动已开启" : "震动已关闭");
+      renderStatus();
+    } else if (act === "vol-") {
+      state.volume = Math.max(1, state.volume - 1);
+      state.muted = false;
+      ensureAudio();
+      playDiBurst();
+      toast("音量 " + state.volume + "/10" + (state.volume <= 1 ? "（最低）" : ""));
+      renderStatus();
+    } else if (act === "vol+") {
+      state.volume = Math.min(10, state.volume + 1);
+      state.muted = false;
+      ensureAudio();
+      playDiBurst();
+      toast(
+        "音量 " +
+          state.volume +
+          "/10" +
+          (state.volume >= 10 ? "（网页上限；再大只能调手机系统音量）" : "")
+      );
       renderStatus();
     } else if (act === "mute") {
       state.muted = !state.muted;
