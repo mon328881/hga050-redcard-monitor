@@ -1,6 +1,6 @@
 /**
  * hga050 滚球红牌监控（同页注入）
- * 挂钩站点 get_game_list（约 3–5 秒一次）+ 备用主动轮询；红牌增量去重提醒。
+ * 挂钩站点 get_game_list + 主动轮询约 1.5 秒一次，目标 2 秒内出红牌提醒。
  */
 (function () {
   // 可重复注入：更新处理函数，不重复打补丁
@@ -9,6 +9,7 @@
     handle: null,
     lastLivePost: null,
     pollTimer: null,
+    pollBusy: false,
   });
 
   if (window.__HGA_REDCARD_MONITOR__) {
@@ -490,7 +491,9 @@
     if (body.indexOf("REDCARD_") === -1 && body.indexOf("<GID>") === -1) return;
     const post = postData || "";
     if (/p=get_game_list/i.test(post) && /showtype=live|rtype=rb/i.test(post)) {
+      const first = !BOOT.lastLivePost;
       BOOT.lastLivePost = post;
+      if (first) activePoll();
     }
     const looksGameList =
       /p=get_game_list/i.test(post) ||
@@ -584,13 +587,17 @@
     });
   }
 
+  const POLL_MS = 1500;
+
   async function activePoll() {
+    if (!state.monitoring) return;
+    if (BOOT.pollBusy) return;
     const post = BOOT.lastLivePost;
     if (!post) return;
+    BOOT.pollBusy = true;
     try {
       const verMatch = post.match(/ver=([^&]+)/);
       const ver = verMatch ? verMatch[1] : "1";
-      // 刷新 ts，避免缓存
       let body = post.replace(/(&ts=)\d+/g, "$1" + Date.now());
       if (!/&ts=/.test(body)) body += "&ts=" + Date.now();
       const res = await fetch("/transform.php?ver=" + encodeURIComponent(ver), {
@@ -601,12 +608,20 @@
       });
       const text = await res.text();
       BOOT.handle(text, body, "poll");
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      BOOT.pollBusy = false;
+    }
   }
 
   function startBackupPoll() {
-    if (BOOT.pollTimer) clearInterval(BOOT.pollTimer);
-    BOOT.pollTimer = setInterval(activePoll, 4000);
+    if (BOOT.pollTimer) clearTimeout(BOOT.pollTimer);
+    function tick() {
+      activePoll().then(function () {
+        BOOT.pollTimer = setTimeout(tick, POLL_MS);
+      });
+    }
+    BOOT.pollTimer = setTimeout(tick, 400);
   }
 
   // UI
@@ -712,7 +727,7 @@
     const bits = [];
     bits.push(state.monitoring ? (state.collapsed ? "收起仍监控" : "监控中") : "已暂停");
     if (state.matchCount) bits.push(state.matchCount + " 场");
-    bits.push("最近 " + t);
+    bits.push("1.5秒轮询");
     bits.push("历史 " + state.history.length);
     if (state.vibrateOn) bits.push("震动");
     bits.push("音量 " + state.volume + "/10");
@@ -967,8 +982,9 @@
     } else if (act === "monitor") {
       state.monitoring = !state.monitoring;
       if (!state.monitoring) stopAlarm();
+      else activePoll();
       buzz(state.monitoring ? [20, 30, 40] : [40]);
-      toast(state.monitoring ? "监控已开启" : "监控已暂停（不再提醒）");
+      toast(state.monitoring ? "监控已开启（约1.5秒刷新）" : "监控已暂停（不再提醒）");
       renderStatus();
     } else if (act === "vibrate") {
       state.vibrateOn = !state.vibrateOn;
@@ -1035,5 +1051,5 @@
     startAlarm,
   };
 
-  toast("红牌监控已修复启动：跟站点约3~5秒同步");
+  toast("红牌监控已启动：约1.5秒刷新，目标2秒内提醒");
 })();
