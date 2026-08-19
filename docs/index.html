@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="hga050 滚球红牌监控书签：登录后一键启动，红牌弹窗+声音+定位" />
+  <meta name="description" content="hga050 滚球红牌监控书签：登录后一键启动" />
   <title>滚球红牌监控 · 安装</title>
   <style>
     :root {
@@ -13,7 +13,6 @@
       --text: #eef3f8;
       --muted: #93a0b0;
       --red: #e23d2c;
-      --ok: #2fbf71;
     }
     * { box-sizing: border-box; }
     body {
@@ -37,6 +36,10 @@
       margin-bottom: 14px;
     }
     .card h2 { margin: 0 0 10px; font-size: 16px; }
+    .warn {
+      border-color: rgba(226,61,44,.45);
+      background: linear-gradient(180deg, rgba(226,61,44,.16), var(--card));
+    }
     .ok {
       border-color: rgba(47,191,113,.35);
       background: linear-gradient(180deg, rgba(47,191,113,.12), var(--card));
@@ -52,19 +55,6 @@
     }
     ol, ul { margin: 8px 0; padding-left: 1.2em; }
     li { margin: 8px 0; }
-    .bookmark {
-      display: block;
-      text-align: center;
-      text-decoration: none;
-      color: #fff;
-      background: linear-gradient(180deg, #ef4b3a, #c2291b);
-      border-radius: 14px;
-      padding: 16px 14px;
-      font-size: 17px;
-      font-weight: 750;
-      margin: 12px 0;
-      box-shadow: 0 10px 28px rgba(226,61,44,.28);
-    }
     .hint { font-size: 13px; color: var(--muted); }
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -75,7 +65,7 @@
     }
     textarea {
       width: 100%;
-      min-height: 88px;
+      min-height: 110px;
       border-radius: 12px;
       border: 1px solid var(--line);
       background: #0d1117;
@@ -90,11 +80,12 @@
       border: 0;
       border-radius: 12px;
       padding: 12px;
-      background: #2a3340;
+      background: #e23d2c;
       color: #fff;
-      font-size: 15px;
-      font-weight: 650;
+      font-size: 16px;
+      font-weight: 750;
     }
+    button.copy.secondary { background: #2a3340; margin-top: 8px; }
     .steps-num {
       display: inline-flex;
       width: 22px; height: 22px;
@@ -111,54 +102,43 @@
 <body>
   <div class="wrap">
     <h1>滚球红牌监控</h1>
-    <p class="lead">公网安装页：任何人打开本链接即可收藏书签。在 hga050 登录并进入滚球后点书签，即可监控红牌（弹窗 / 滴滴声 / 定位）。</p>
+    <p class="lead">在已登录的 hga050 滚球页运行。书签网址必须以 <code>javascript:</code> 开头，不能是本安装页的 https 地址。</p>
+
+    <section class="card warn">
+      <h2>为什么一点书签就跳回安装页？</h2>
+      <p style="margin:0;font-size:14px">手机把<strong>本安装页</strong>收成了书签（网址是 <code>https://…github.io/…</code>），所以会打开这个网站。正确书签的网址必须是 <code>javascript:</code> 开头的一长串代码，点了之后人还在 hga050，只是弹出监控面板。</p>
+    </section>
 
     <section class="card ok">
-      <h2>分享给别人这个地址即可</h2>
-      <div class="urlbox" id="shareUrl">加载中…</div>
-      <p class="hint" style="margin:10px 0 0">对方不需要和你同一 WiFi，也不需要你的电脑开机。</p>
-    </section>
-
-    <section class="card">
-      <h2>对方怎么用（3 步）</h2>
+      <h2>正确安装（必做：改书签网址）</h2>
       <ol>
-        <li><span class="steps-num">1</span>打开上面的公网地址，把红色按钮<strong>收成书签</strong>（或复制书签代码后编辑收藏夹网址）</li>
-        <li><span class="steps-num">2</span>用自己的账号登录 <strong>hga050.com</strong>，进入 <strong>滚球 → 足球</strong></li>
-        <li><span class="steps-num">3</span>点收藏夹里的「红牌监控」，再点面板里的<strong>开声音</strong></li>
+        <li><span class="steps-num">1</span>点下面红色按钮，<strong>复制书签代码</strong></li>
+        <li><span class="steps-num">2</span>先随便收藏一页（本页或 hga050 都行），名称改成「红牌监控」</li>
+        <li><span class="steps-num">3</span>打开书签 → <strong>编辑</strong> → 把「网址 / URL」<strong>全部删掉</strong>，粘贴刚复制的代码 → 保存</li>
+        <li><span class="steps-num">4</span>检查网址是不是以 <code>javascript:</code> 开头。如果是 <code>https://</code>，说明没改对，会继续跳走</li>
+        <li><span class="steps-num">5</span>打开并登录 <strong>hga050.com</strong>，进入<strong>滚球 → 足球</strong>，再点这个书签</li>
       </ol>
-    </section>
-
-    <section class="card">
-      <h2>① 添加书签（推荐短链接版）</h2>
-      <p class="hint">书签很短：运行时从本站拉取最新脚本，以后你更新公网文件，对方不用重装书签。</p>
-      <a class="bookmark" id="bookmarkLink" href="#">⭐ 红牌监控</a>
       <textarea id="bmCode" readonly></textarea>
       <button class="copy" id="copyBtn" type="button">复制书签代码</button>
+      <p class="hint" id="checkHint" style="margin-top:10px"></p>
     </section>
 
     <section class="card">
-      <h2>Android / iPhone 提示</h2>
+      <h2>Android Chrome</h2>
       <ul>
-        <li><strong>Android Chrome</strong>：先收藏本页 → 编辑书签 → 网址换成上方代码 → 名称改「红牌监控」</li>
-        <li><strong>iPhone Safari</strong>：收藏后编辑书签地址，粘贴上方代码</li>
-        <li><strong>Via / Firefox + 油猴</strong>：也可直接安装用户脚本（见下方）</li>
+        <li>星标收藏 → 书签管理 → 点那条右侧菜单 → 编辑</li>
+        <li>网址栏粘贴代码。若保存后 <code>javascript:</code> 消失，换 <strong>Via 浏览器</strong> 或 Firefox + 油猴</li>
+      </ul>
+      <h2 style="margin-top:16px">iPhone Safari</h2>
+      <ul>
+        <li>分享 → 添加书签 → 书签列表点「编辑」→ 点这条 → 改地址</li>
       </ul>
     </section>
 
     <section class="card">
-      <h2>② 油猴用户脚本（可选）</h2>
-      <p class="hint">适合 Via / Firefox。安装油猴后打开：</p>
+      <h2>油猴（Via / Firefox，更稳）</h2>
+      <p class="hint">不依赖书签，进入 hga050 后可自动注入：</p>
       <div class="urlbox" id="userscriptUrl" style="font-size:13px;font-weight:600"></div>
-      <p class="hint" style="margin-top:8px">匹配 <code>*://hga050.com/*</code>，进入滚球后可自动或手动启动。</p>
-    </section>
-
-    <section class="card">
-      <h2>说明</h2>
-      <ul>
-        <li>脚本必须在<strong>已登录的 hga050 页面</strong>里运行（书签注入），不能替对方登录</li>
-        <li>刷新页面后需再点一次书签</li>
-        <li>有红牌才提醒；点击提醒可定位；左滑可删历史</li>
-      </ul>
     </section>
   </div>
 
@@ -166,27 +146,26 @@
     (function () {
       var origin = location.origin;
       var scriptUrl = origin + "/redcard-monitor.js";
-      var share = location.href.split("#")[0].split("?")[0];
-      document.getElementById("shareUrl").textContent = share;
       document.getElementById("userscriptUrl").textContent = origin + "/redcard.user.js";
 
-      // 短书签：用 script 标签加载（跨域可执行，不依赖 CORS fetch）
+      // 末尾 void 0，避免浏览器把返回值当成要跳转的网址
       var loader =
-        "javascript:void(function(d,u){var s=d.createElement('script');s.src=u+'?t='+Date.now();s.charset='utf-8';d.documentElement.appendChild(s);}(document,'" +
-        scriptUrl.replace(/'/g, "%27") +
-        "'))";
+        "javascript:void(function(){var s=document.createElement('script');s.src='" +
+        scriptUrl.replace(/'/g, "") +
+        "?t='+Date.now();s.charset='utf-8';document.documentElement.appendChild(s);}())";
 
-      document.getElementById("bookmarkLink").setAttribute("href", loader);
       document.getElementById("bmCode").value = loader;
+      document.getElementById("checkHint").textContent =
+        "代码应以 javascript:void 开头，不要以 https:// 开头。";
 
       document.getElementById("copyBtn").onclick = async function () {
         try {
           await navigator.clipboard.writeText(loader);
-          this.textContent = "已复制";
+          this.textContent = "已复制，去编辑书签网址粘贴";
         } catch (e) {
           document.getElementById("bmCode").select();
           document.execCommand("copy");
-          this.textContent = "已复制";
+          this.textContent = "已复制，去编辑书签网址粘贴";
         }
       };
     })();
