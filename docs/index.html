@@ -104,19 +104,21 @@
     <section class="card ok">
       <h2>手机这样装</h2>
       <ol>
-        <li>先安装 <strong>Via 浏览器</strong>（官网 viayoo.com，应用商店也有）</li>
-        <li>用 Via 打开本页，点下面红色按钮</li>
-        <li>Via 弹出安装脚本时选允许</li>
+        <li>先安装 <strong>Via 浏览器</strong>（官网 viayoo.com）</li>
+        <li>用 Via 打开本页，点红色按钮复制脚本</li>
+        <li>Via 右上角 <strong>≡ → 设置 → 脚本 → 添加脚本</strong>：匹配填 <code style="font-family:inherit">*hga050.com*</code>，内容粘贴刚才复制的代码，保存并打开开关</li>
         <li>仍用 Via 打开并登录 <strong>hga050.com</strong>，进入滚球，等 2 秒出现监控面板</li>
       </ol>
-      <a class="btn" id="installBtn" href="./redcard.user.js">在 Via 里安装脚本</a>
+      <button class="copy" id="copyScript" type="button" style="background:#e23d2c;margin-top:12px">复制脚本（去 Via 里粘贴）</button>
       <a class="btn btn-ghost" href="https://viayoo.com/" target="_blank" rel="noopener">下载 Via 浏览器</a>
+      <textarea id="viaCode" readonly style="margin-top:12px;min-height:88px;width:100%;border-radius:12px;border:1px solid var(--line);background:#0d1117;color:#d7e0ea;padding:10px;font-size:12px"></textarea>
     </section>
 
     <section class="card">
       <h2>安装链接（可收藏）</h2>
-      <p class="hint">这是正常 https 地址。用 Via 打开才会安装；用系统浏览器打开只会看到代码。</p>
+      <p class="hint">必须带仓库名 <code style="font-family:inherit">/hga050-redcard-monitor/</code>。点开如果是代码而不是安装框，请改用上面的「复制脚本」。</p>
       <div class="urlbox" id="userscriptUrl"></div>
+      <a class="btn btn-ghost" id="installBtn" href="https://mon328881.github.io/hga050-redcard-monitor/redcard.user.js">打开脚本文件</a>
       <button class="copy" id="copyBtn" type="button">复制安装链接</button>
     </section>
 
@@ -134,16 +136,24 @@
 
   <script>
     (function () {
-      var origin = location.origin;
-      var scriptPage = origin + "/redcard.user.js";
-      var monitor = origin + "/redcard-monitor.js";
+      function assetUrl(file) {
+        var path = location.pathname || "/";
+        if (/\.html?$/i.test(path)) path = path.replace(/\/[^/]+$/, "/");
+        else if (path.charAt(path.length - 1) !== "/") path += "/";
+        return location.origin + path + file;
+      }
+      var scriptPage = assetUrl("redcard.user.js");
+      var monitor = assetUrl("redcard-monitor.js");
       document.getElementById("userscriptUrl").textContent = scriptPage;
       document.getElementById("installBtn").href = scriptPage;
 
-      var loader =
-        "javascript:void(function(){var s=document.createElement('script');s.src='" +
+      var viaCode =
+        "(function(){var s=document.createElement('script');s.src='" +
         monitor.replace(/'/g, "") +
         "?t='+Date.now();s.charset='utf-8';document.documentElement.appendChild(s);}())";
+      document.getElementById("viaCode").value = viaCode;
+
+      var loader = "javascript:void" + viaCode;
       document.getElementById("bmCode").textContent = loader;
 
       function copy(text, btn, ok) {
@@ -156,8 +166,11 @@
           prompt("长按复制", text);
         }
       }
+      document.getElementById("copyScript").onclick = function () {
+        copy(viaCode, this, "已复制，去 Via 设置 → 脚本里粘贴");
+      };
       document.getElementById("copyBtn").onclick = function () {
-        copy(scriptPage, this, "已复制，用 Via 打开");
+        copy(scriptPage, this, "已复制");
       };
       document.getElementById("copyBm").onclick = function () {
         copy(loader, this, "已复制（仅电脑 Chrome）");
