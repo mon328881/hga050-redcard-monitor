@@ -65,7 +65,7 @@
     }
     textarea {
       width: 100%;
-      min-height: 110px;
+      min-height: 120px;
       border-radius: 12px;
       border: 1px solid var(--line);
       background: #0d1117;
@@ -85,7 +85,6 @@
       font-size: 16px;
       font-weight: 750;
     }
-    button.copy.secondary { background: #2a3340; margin-top: 8px; }
     .steps-num {
       display: inline-flex;
       width: 22px; height: 22px;
@@ -102,21 +101,20 @@
 <body>
   <div class="wrap">
     <h1>滚球红牌监控</h1>
-    <p class="lead">在已登录的 hga050 滚球页运行。书签网址必须以 <code>javascript:</code> 开头，不能是本安装页的 https 地址。</p>
+    <p class="lead">手机浏览器会拦截普通 <code>javascript:</code> 书签。下面这串代码带了 https 伪装，保存时一般能过校验，点开仍在 hga050 里运行。</p>
 
     <section class="card warn">
-      <h2>为什么一点书签就跳回安装页？</h2>
-      <p style="margin:0;font-size:14px">手机把<strong>本安装页</strong>收成了书签（网址是 <code>https://…github.io/…</code>），所以会打开这个网站。正确书签的网址必须是 <code>javascript:</code> 开头的一长串代码，点了之后人还在 hga050，只是弹出监控面板。</p>
+      <h2>保存提示「网址不符合规范」？</h2>
+      <p style="margin:0;font-size:14px">请用下面<strong>新代码</strong>（里面有 <code>https://</code>，用来骗过校验）。不要用纯 <code>javascript:void</code> 那一版。若仍无法保存，用页底的 Via / 油猴方案。</p>
     </section>
 
     <section class="card ok">
-      <h2>正确安装（必做：改书签网址）</h2>
+      <h2>安装步骤</h2>
       <ol>
-        <li><span class="steps-num">1</span>点下面红色按钮，<strong>复制书签代码</strong></li>
-        <li><span class="steps-num">2</span>先随便收藏一页（本页或 hga050 都行），名称改成「红牌监控」</li>
-        <li><span class="steps-num">3</span>打开书签 → <strong>编辑</strong> → 把「网址 / URL」<strong>全部删掉</strong>，粘贴刚复制的代码 → 保存</li>
-        <li><span class="steps-num">4</span>检查网址是不是以 <code>javascript:</code> 开头。如果是 <code>https://</code>，说明没改对，会继续跳走</li>
-        <li><span class="steps-num">5</span>打开并登录 <strong>hga050.com</strong>，进入<strong>滚球 → 足球</strong>，再点这个书签</li>
+        <li><span class="steps-num">1</span>点红色按钮复制代码</li>
+        <li><span class="steps-num">2</span>先收藏<strong>本页</strong>（正常 https 书签一定能保存）</li>
+        <li><span class="steps-num">3</span>书签 → 编辑「红牌监控」→ 网址<strong>整段替换</strong>为复制的代码 → 保存</li>
+        <li><span class="steps-num">4</span>打开并登录 <strong>hga050.com</strong>，进入滚球，再点该书签</li>
       </ol>
       <textarea id="bmCode" readonly></textarea>
       <button class="copy" id="copyBtn" type="button">复制书签代码</button>
@@ -124,21 +122,10 @@
     </section>
 
     <section class="card">
-      <h2>Android Chrome</h2>
-      <ul>
-        <li>星标收藏 → 书签管理 → 点那条右侧菜单 → 编辑</li>
-        <li>网址栏粘贴代码。若保存后 <code>javascript:</code> 消失，换 <strong>Via 浏览器</strong> 或 Firefox + 油猴</li>
-      </ul>
-      <h2 style="margin-top:16px">iPhone Safari</h2>
-      <ul>
-        <li>分享 → 添加书签 → 书签列表点「编辑」→ 点这条 → 改地址</li>
-      </ul>
-    </section>
-
-    <section class="card">
-      <h2>油猴（Via / Firefox，更稳）</h2>
-      <p class="hint">不依赖书签，进入 hga050 后可自动注入：</p>
+      <h2>仍不能保存时</h2>
+      <p class="hint">用 Via 浏览器或 Firefox，安装油猴后打开：</p>
       <div class="urlbox" id="userscriptUrl" style="font-size:13px;font-weight:600"></div>
+      <p class="hint" style="margin-top:8px">进入 hga050 后会自动注入，不用改书签网址。</p>
     </section>
   </div>
 
@@ -148,15 +135,16 @@
       var scriptUrl = origin + "/redcard-monitor.js";
       document.getElementById("userscriptUrl").textContent = origin + "/redcard.user.js";
 
-      // 末尾 void 0，避免浏览器把返回值当成要跳转的网址
+      // 手机校验会拒绝纯 javascript: 。javascript://https://…%0A 把 https 放进注释，
+      // 保存时像合法网址；执行时 // 后面是注释，换行后才跑真正的注入代码，不会跳走。
       var loader =
-        "javascript:void(function(){var s=document.createElement('script');s.src='" +
+        "javascript://https://mon328881.github.io/hga050-redcard-monitor/%0Avoid(function(){var s=document.createElement('script');s.src='" +
         scriptUrl.replace(/'/g, "") +
         "?t='+Date.now();s.charset='utf-8';document.documentElement.appendChild(s);}())";
 
       document.getElementById("bmCode").value = loader;
       document.getElementById("checkHint").textContent =
-        "代码应以 javascript:void 开头，不要以 https:// 开头。";
+        "这串应以 javascript://https:// 开头。点了之后应留在 hga050，出现监控面板。";
 
       document.getElementById("copyBtn").onclick = async function () {
         try {
