@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name         hga050 滚球红牌监控
 // @namespace    hga-redcard
-// @version      1.0.1
+// @version      1.1.0
 // @description  滚球红牌提醒：弹窗+滴滴声+定位
 // @match        *://hga050.com/*
 // @match        *://*.hga050.com/*
+// @include      *://hga050.com/*
+// @include      *://*.hga050.com/*
 // @grant        none
 // @run-at       document-idle
 // @downloadURL  https://mon328881.github.io/hga050-redcard-monitor/redcard.user.js

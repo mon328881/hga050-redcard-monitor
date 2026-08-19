@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="hga050 滚球红牌监控书签：登录后一键启动" />
+  <meta name="description" content="hga050 滚球红牌监控：用 Via 安装脚本，进入滚球自动提醒" />
   <title>滚球红牌监控 · 安装</title>
   <style>
     :root {
@@ -13,6 +13,7 @@
       --text: #eef3f8;
       --muted: #93a0b0;
       --red: #e23d2c;
+      --green: #2fbf71;
     }
     * { box-sizing: border-box; }
     body {
@@ -26,8 +27,8 @@
       line-height: 1.55;
     }
     .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
-    h1 { margin: 0 0 8px; font-size: 26px; }
-    .lead { color: var(--muted); margin-bottom: 20px; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: .02em; }
+    .lead { color: var(--muted); margin: 0 0 22px; font-size: 15px; }
     .card {
       background: var(--card);
       border: 1px solid var(--line);
@@ -36,43 +37,44 @@
       margin-bottom: 14px;
     }
     .card h2 { margin: 0 0 10px; font-size: 16px; }
-    .warn {
-      border-color: rgba(226,61,44,.45);
-      background: linear-gradient(180deg, rgba(226,61,44,.16), var(--card));
-    }
     .ok {
       border-color: rgba(47,191,113,.35);
       background: linear-gradient(180deg, rgba(47,191,113,.12), var(--card));
     }
+    .warn {
+      border-color: rgba(226,61,44,.45);
+      background: linear-gradient(180deg, rgba(226,61,44,.16), var(--card));
+    }
+    ol { margin: 8px 0 0; padding-left: 1.2em; }
+    li { margin: 10px 0; }
+    .hint { font-size: 13px; color: var(--muted); }
+    a.btn {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      margin-top: 12px;
+      border-radius: 12px;
+      padding: 14px;
+      background: var(--red);
+      color: #fff;
+      font-size: 17px;
+      font-weight: 750;
+    }
+    a.btn-ghost {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-weight: 650;
+      margin-top: 8px;
+    }
     .urlbox {
       word-break: break-all;
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 650;
       color: #7dffb3;
       background: #0d1117;
       padding: 12px;
       border-radius: 10px;
-    }
-    ol, ul { margin: 8px 0; padding-left: 1.2em; }
-    li { margin: 8px 0; }
-    .hint { font-size: 13px; color: var(--muted); }
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12px;
-      background: #0d1117;
-      padding: 2px 6px;
-      border-radius: 6px;
-    }
-    textarea {
-      width: 100%;
-      min-height: 120px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: #0d1117;
-      color: #d7e0ea;
-      padding: 10px;
-      font-size: 12px;
-      line-height: 1.4;
     }
     button.copy {
       margin-top: 8px;
@@ -80,81 +82,85 @@
       border: 0;
       border-radius: 12px;
       padding: 12px;
-      background: #e23d2c;
+      background: #2a3544;
       color: #fff;
-      font-size: 16px;
-      font-weight: 750;
-    }
-    .steps-num {
-      display: inline-flex;
-      width: 22px; height: 22px;
-      align-items: center; justify-content: center;
-      border-radius: 50%;
-      background: var(--red);
-      color: #fff;
-      font-size: 12px;
+      font-size: 15px;
       font-weight: 700;
-      margin-right: 6px;
     }
+    details { margin-top: 6px; }
+    summary { cursor: pointer; color: var(--muted); font-size: 14px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>滚球红牌监控</h1>
-    <p class="lead">手机浏览器会拦截普通 <code>javascript:</code> 书签。下面这串代码带了 https 伪装，保存时一般能过校验，点开仍在 hga050 里运行。</p>
+    <p class="lead">手机系统浏览器不允许保存脚本网址，所以会提示「网址不符合规范」。请改用 Via，装的是普通 https 脚本，进入滚球后会自己出现面板。</p>
 
     <section class="card warn">
-      <h2>保存提示「网址不符合规范」？</h2>
-      <p style="margin:0;font-size:14px">请用下面<strong>新代码</strong>（里面有 <code>https://</code>，用来骗过校验）。不要用纯 <code>javascript:void</code> 那一版。若仍无法保存，用页底的 Via / 油猴方案。</p>
+      <h2>不要再改书签网址</h2>
+      <p class="hint" style="margin:0">Chrome / 小米 / 华为 / OPPO 都会拦截 <code style="font-family:inherit">javascript:</code>。伪装成 https 也过不了。下面这条安装链接是真的 https，可以收藏。</p>
     </section>
 
     <section class="card ok">
-      <h2>安装步骤</h2>
+      <h2>手机这样装</h2>
       <ol>
-        <li><span class="steps-num">1</span>点红色按钮复制代码</li>
-        <li><span class="steps-num">2</span>先收藏<strong>本页</strong>（正常 https 书签一定能保存）</li>
-        <li><span class="steps-num">3</span>书签 → 编辑「红牌监控」→ 网址<strong>整段替换</strong>为复制的代码 → 保存</li>
-        <li><span class="steps-num">4</span>打开并登录 <strong>hga050.com</strong>，进入滚球，再点该书签</li>
+        <li>先安装 <strong>Via 浏览器</strong>（官网 viayoo.com，应用商店也有）</li>
+        <li>用 Via 打开本页，点下面红色按钮</li>
+        <li>Via 弹出安装脚本时选允许</li>
+        <li>仍用 Via 打开并登录 <strong>hga050.com</strong>，进入滚球，等 2 秒出现监控面板</li>
       </ol>
-      <textarea id="bmCode" readonly></textarea>
-      <button class="copy" id="copyBtn" type="button">复制书签代码</button>
-      <p class="hint" id="checkHint" style="margin-top:10px"></p>
+      <a class="btn" id="installBtn" href="./redcard.user.js">在 Via 里安装脚本</a>
+      <a class="btn btn-ghost" href="https://viayoo.com/" target="_blank" rel="noopener">下载 Via 浏览器</a>
     </section>
 
     <section class="card">
-      <h2>仍不能保存时</h2>
-      <p class="hint">用 Via 浏览器或 Firefox，安装油猴后打开：</p>
-      <div class="urlbox" id="userscriptUrl" style="font-size:13px;font-weight:600"></div>
-      <p class="hint" style="margin-top:8px">进入 hga050 后会自动注入，不用改书签网址。</p>
+      <h2>安装链接（可收藏）</h2>
+      <p class="hint">这是正常 https 地址。用 Via 打开才会安装；用系统浏览器打开只会看到代码。</p>
+      <div class="urlbox" id="userscriptUrl"></div>
+      <button class="copy" id="copyBtn" type="button">复制安装链接</button>
+    </section>
+
+    <section class="card">
+      <h2>没有 Via 时</h2>
+      <p class="hint" style="margin-top:0">Firefox 安装油猴插件后，用 Firefox 打开上面的安装链接。</p>
+      <details>
+        <summary>电脑 Chrome 仍可用书签（手机不行）</summary>
+        <p class="hint">在电脑 Chrome 把下面代码存成书签，登录 hga050 滚球后再点。手机请不要用这个。</p>
+        <div class="urlbox" id="bmCode" style="margin-top:8px;font-weight:500;font-size:12px"></div>
+        <button class="copy" id="copyBm" type="button">复制电脑书签代码</button>
+      </details>
     </section>
   </div>
 
   <script>
     (function () {
       var origin = location.origin;
-      var scriptUrl = origin + "/redcard-monitor.js";
-      document.getElementById("userscriptUrl").textContent = origin + "/redcard.user.js";
+      var scriptPage = origin + "/redcard.user.js";
+      var monitor = origin + "/redcard-monitor.js";
+      document.getElementById("userscriptUrl").textContent = scriptPage;
+      document.getElementById("installBtn").href = scriptPage;
 
-      // 手机校验会拒绝纯 javascript: 。javascript://https://…%0A 把 https 放进注释，
-      // 保存时像合法网址；执行时 // 后面是注释，换行后才跑真正的注入代码，不会跳走。
       var loader =
-        "javascript://https://mon328881.github.io/hga050-redcard-monitor/%0Avoid(function(){var s=document.createElement('script');s.src='" +
-        scriptUrl.replace(/'/g, "") +
+        "javascript:void(function(){var s=document.createElement('script');s.src='" +
+        monitor.replace(/'/g, "") +
         "?t='+Date.now();s.charset='utf-8';document.documentElement.appendChild(s);}())";
+      document.getElementById("bmCode").textContent = loader;
 
-      document.getElementById("bmCode").value = loader;
-      document.getElementById("checkHint").textContent =
-        "这串应以 javascript://https:// 开头。点了之后应留在 hga050，出现监控面板。";
-
-      document.getElementById("copyBtn").onclick = async function () {
-        try {
-          await navigator.clipboard.writeText(loader);
-          this.textContent = "已复制，去编辑书签网址粘贴";
-        } catch (e) {
-          document.getElementById("bmCode").select();
-          document.execCommand("copy");
-          this.textContent = "已复制，去编辑书签网址粘贴";
+      function copy(text, btn, ok) {
+        var done = function () { btn.textContent = ok; };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () {
+            prompt("长按复制", text);
+          });
+        } else {
+          prompt("长按复制", text);
         }
+      }
+      document.getElementById("copyBtn").onclick = function () {
+        copy(scriptPage, this, "已复制，用 Via 打开");
+      };
+      document.getElementById("copyBm").onclick = function () {
+        copy(loader, this, "已复制（仅电脑 Chrome）");
       };
     })();
   </script>
