@@ -33,6 +33,8 @@
     monitoring: true,
     vibrateOn: true,
     volume: 10, // 1–10，10 为网页音频上限（仍受系统音量限制）
+    seenLists: 0,
+    startedAt: Date.now(),
   };
 
   function pick(block, name) {
@@ -124,7 +126,7 @@
       state.alarmTimer = null;
     }
     buzz(0);
-    if (typeof miniBtn !== "undefined" && miniBtn) miniBtn.classList.remove("hga-rc-mini-pulse");
+    markMiniAlarm(false);
   }
 
   function startAlarm() {
@@ -138,9 +140,7 @@
         return;
       }
       playDiBurst();
-      if (state.collapsed && miniBtn) {
-        miniBtn.classList.add("hga-rc-mini-pulse");
-      }
+      markMiniAlarm(true);
     }, 480);
   }
 
@@ -165,7 +165,7 @@
       });
     }
     ui.toastBox.appendChild(el);
-    setTimeout(() => el.remove(), 12000);
+    setTimeout(() => el.remove(), state.collapsed ? 25000 : 14000);
   }
 
   function clearLocateHighlight() {
@@ -411,18 +411,48 @@
     } else {
       playDiBurst();
     }
-    if (state.collapsed) {
-      miniBtn.classList.add("hga-rc-mini-pulse");
-    } else {
-      flashPanel();
-    }
+    markMiniAlarm(true);
+    if (!state.collapsed) flashPanel();
     renderStatus();
     return true;
+  }
+
+  function warmedUp() {
+    return state.seenLists >= 2 && Date.now() - state.startedAt > 6000;
+  }
+
+  function alertRedIncrease(m, side, from, to) {
+    const isH = side === "H";
+    const team = isH ? m.teamH : m.teamC;
+    const label = isH ? "主队" : "客队";
+    for (let n = from + 1; n <= to; n++) {
+      onAlert(
+        "红牌！" +
+          label +
+          " " +
+          team +
+          "（第" +
+          n +
+          "张）｜" +
+          m.teamH +
+          " " +
+          m.scoreH +
+          "-" +
+          m.scoreC +
+          " " +
+          m.teamC +
+          "｜" +
+          m.league,
+        Object.assign({}, m, { side, n }),
+        m.gid + ":" + side + ":" + n
+      );
+    }
   }
 
   function applyMatches(matches, source) {
     state.matchCount = matches.length;
     state.lastAt = new Date();
+    state.seenLists += 1;
     if (!state.monitoring) {
       state.lastSource = "paused";
       for (const m of matches) {
@@ -434,57 +464,21 @@
       return;
     }
     state.lastSource = source || "api";
+    const ready = warmedUp();
     for (const m of matches) {
       const prev = state.snap.get(m.gid) || { h: 0, c: 0 };
       const firstSee = !state.snap.has(m.gid);
-      if (!firstSee) {
-        if (m.redH > prev.h) {
-          for (let n = prev.h + 1; n <= m.redH; n++) {
-            onAlert(
-              "红牌！主队 " +
-                m.teamH +
-                "（第" +
-                n +
-                "张）｜" +
-                m.teamH +
-                " " +
-                m.scoreH +
-                "-" +
-                m.scoreC +
-                " " +
-                m.teamC +
-                "｜" +
-                m.league,
-              Object.assign({}, m, { side: "H", n }),
-              m.gid + ":H:" + n
-            );
-          }
-        }
-        if (m.redC > prev.c) {
-          for (let n = prev.c + 1; n <= m.redC; n++) {
-            onAlert(
-              "红牌！客队 " +
-                m.teamC +
-                "（第" +
-                n +
-                "张）｜" +
-                m.teamH +
-                " " +
-                m.scoreH +
-                "-" +
-                m.scoreC +
-                " " +
-                m.teamC +
-                "｜" +
-                m.league,
-              Object.assign({}, m, { side: "C", n }),
-              m.gid + ":C:" + n
-            );
-          }
-        }
-      } else {
+      if (firstSee && !ready) {
+        // 刚启动：记下当前红牌当基线，避免把场上已有红牌刷一屏
         for (let n = 1; n <= m.redH; n++) state.alerted.add(m.gid + ":H:" + n);
         for (let n = 1; n <= m.redC; n++) state.alerted.add(m.gid + ":C:" + n);
+      } else if (firstSee && ready) {
+        // 启动完成后新出现的比赛若已带红牌，也要报（联赛展开/列表补全）
+        if (m.redH > 0) alertRedIncrease(m, "H", 0, m.redH);
+        if (m.redC > 0) alertRedIncrease(m, "C", 0, m.redC);
+      } else {
+        if (m.redH > prev.h) alertRedIncrease(m, "H", prev.h, m.redH);
+        if (m.redC > prev.c) alertRedIncrease(m, "C", prev.c, m.redC);
       }
       state.snap.set(m.gid, { h: m.redH, c: m.redC });
     }
@@ -665,7 +659,7 @@
     padding:12px 8px;font-size:14px;font-weight:750;letter-spacing:.04em;box-shadow:0 8px 24px rgba(0,0,0,.35);
     cursor:pointer;display:none}
   .hga-rc-mini.hga-rc-mini-show{display:block}
-  .hga-rc-mini-pulse{animation:hgaRcMiniPulse 1.2s ease 2}
+  .hga-rc-mini-pulse{animation:hgaRcMiniPulse .65s ease-in-out infinite}
   @keyframes hgaRcMiniPulse{0%,100%{transform:translateX(0)}50%{transform:translateX(-4px);box-shadow:0 0 0 3px rgba(226,61,44,.55),0 8px 24px rgba(0,0,0,.35)}}
   `;
   document.documentElement.appendChild(style);
@@ -673,7 +667,7 @@
   const panel = document.createElement("div");
   panel.className = "hga-rc-panel";
   panel.innerHTML =
-    '<div class="hga-rc-hd"><div><b>红牌监控</b><span class="sub">左滑删历史 · 点提醒定位停声</span></div>' +
+    '<div class="hga-rc-hd"><div><b>红牌监控</b><span class="sub">收起仍监控 · 点开声音 · 左滑删历史</span></div>' +
     '<div class="hga-rc-acts">' +
     '<button type="button" data-act="monitor" class="on">监控开</button>' +
     '<button type="button" data-act="vibrate" class="on">震动开</button>' +
@@ -716,7 +710,7 @@
       ? state.lastAt.toLocaleTimeString("zh-CN", { hour12: false })
       : "—";
     const bits = [];
-    bits.push(state.monitoring ? "监控中" : "已暂停");
+    bits.push(state.monitoring ? (state.collapsed ? "收起仍监控" : "监控中") : "已暂停");
     if (state.matchCount) bits.push(state.matchCount + " 场");
     bits.push("最近 " + t);
     bits.push("历史 " + state.history.length);
@@ -900,10 +894,23 @@
     bindHistorySwipe();
   }
 
+  function markMiniAlarm(on) {
+    if (!miniBtn) return;
+    if (on && state.collapsed) {
+      miniBtn.textContent = "红牌!";
+      miniBtn.classList.add("hga-rc-mini-pulse");
+    } else if (!state.alarming) {
+      miniBtn.textContent = "监控";
+      miniBtn.classList.remove("hga-rc-mini-pulse");
+    }
+  }
+
   function collapse() {
     state.collapsed = true;
     panel.classList.add("hga-rc-hidden");
     miniBtn.classList.add("hga-rc-mini-show");
+    markMiniAlarm(state.alarming);
+    renderStatus();
   }
 
   function expand() {
@@ -911,6 +918,8 @@
     panel.classList.remove("hga-rc-hidden");
     miniBtn.classList.remove("hga-rc-mini-show");
     miniBtn.classList.remove("hga-rc-mini-pulse");
+    miniBtn.textContent = "监控";
+    renderStatus();
   }
 
   miniBtn.addEventListener("click", function () {
@@ -1003,6 +1012,7 @@
         onAlert("测试红牌提醒：弹窗 + 声音 + 震动", { test: true }, null);
       }
     } else if (act === "collapse") {
+      ensureAudio();
       collapse();
     }
   });
