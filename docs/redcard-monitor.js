@@ -36,7 +36,44 @@
     volume: 10, // 1–10，10 为网页音频上限（仍受系统音量限制）
     seenLists: 0,
     startedAt: Date.now(),
+    leagues: new Map(), // key -> { key, name, count }
+    mutedLeagues: new Set(), // 勾选的联赛：不提醒
+    filterOpen: false,
   };
+
+  const MUTE_LS_KEY = "hga_rc_muted_leagues";
+
+  function loadMutedLeagues() {
+    try {
+      const raw = localStorage.getItem(MUTE_LS_KEY);
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) arr.forEach(function (k) {
+        if (k) state.mutedLeagues.add(String(k));
+      });
+    } catch (_) {}
+  }
+
+  function saveMutedLeagues() {
+    try {
+      localStorage.setItem(MUTE_LS_KEY, JSON.stringify(Array.from(state.mutedLeagues)));
+    } catch (_) {}
+  }
+
+  function leagueKey(m) {
+    if (m.lid) return "L:" + m.lid;
+    if (m.league) return "N:" + m.league;
+    return "N:未知联赛";
+  }
+
+  function isLeagueMuted(m) {
+    return state.mutedLeagues.has(leagueKey(m));
+  }
+
+  loadMutedLeagues();
+
+  // 稍后 UI 就绪后赋值
+  let renderLeagueFilter = function () {};
 
   function pick(block, name) {
     const m = block.match(new RegExp("<" + name + "[^>]*>([^<]*)</" + name + ">", "i"));
@@ -441,11 +478,43 @@
     return state.seenLists >= 2 && Date.now() - state.startedAt > 6000;
   }
 
+  function refreshLeagueIndex(matches) {
+    const counts = new Map();
+    for (const m of matches) {
+      const key = leagueKey(m);
+      const name = m.league || "未知联赛";
+      const cur = counts.get(key) || { key, name, count: 0 };
+      cur.count += 1;
+      if (name && name !== "未知联赛") cur.name = name;
+      counts.set(key, cur);
+    }
+    let structureChanged = false;
+    counts.forEach(function (info, key) {
+      const old = state.leagues.get(key);
+      if (!old) structureChanged = true;
+      else if (old.name !== info.name) structureChanged = true;
+      state.leagues.set(key, info);
+    });
+    state.leagues.forEach(function (info, key) {
+      if (!counts.has(key) && info.count !== 0) {
+        info.count = 0;
+      }
+    });
+    renderLeagueFilter(structureChanged);
+  }
+
   function alertRedIncrease(m, side, from, to) {
+    const muted = isLeagueMuted(m);
     const isH = side === "H";
     const team = isH ? m.teamH : m.teamC;
     const label = isH ? "主队" : "客队";
     for (let n = from + 1; n <= to; n++) {
+      const key = m.gid + ":" + side + ":" + n;
+      if (muted) {
+        // 勾选屏蔽：不弹不响，但仍记入已见，避免取消勾选后刷旧红牌
+        state.alerted.add(key);
+        continue;
+      }
       onAlert(
         "红牌！" +
           label +
@@ -464,7 +533,7 @@
           "｜" +
           m.league,
         Object.assign({}, m, { side, n }),
-        m.gid + ":" + side + ":" + n
+        key
       );
     }
   }
@@ -473,6 +542,7 @@
     state.matchCount = matches.length;
     state.lastAt = new Date();
     state.seenLists += 1;
+    refreshLeagueIndex(matches);
     if (!state.monitoring) {
       state.lastSource = "paused";
       for (const m of matches) {
@@ -661,8 +731,24 @@
   .hga-rc-acts button.primary{background:#e23d2c}
   .hga-rc-acts button.off{background:#3a4452;color:#9aa6b5}
   .hga-rc-acts button.on{background:#1f7a4c}
-  .hga-rc-body{max-height:38vh;overflow:auto;padding:8px 10px 12px}
+  .hga-rc-body{max-height:46vh;overflow:auto;padding:8px 10px 12px}
   .hga-rc-status{font-size:12px;opacity:.85;margin-bottom:6px;line-height:1.4}
+  .hga-rc-filter{margin:6px 0 10px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#161d27;overflow:hidden}
+  .hga-rc-filter-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;cursor:pointer;user-select:none}
+  .hga-rc-filter-hd b{font-size:12px;font-weight:700}
+  .hga-rc-filter-hd .tip{font-size:11px;opacity:.7}
+  .hga-rc-filter-acts{display:flex;gap:6px;flex-wrap:wrap;padding:0 10px 8px}
+  .hga-rc-filter-acts button{border:0;border-radius:7px;padding:5px 8px;font-size:11px;background:#2a3340;color:#fff;cursor:pointer}
+  .hga-rc-filter-list{display:none;max-height:28vh;overflow:auto;padding:0 6px 8px}
+  .hga-rc-filter.open .hga-rc-filter-list{display:block}
+  .hga-rc-filter.open .hga-rc-filter-acts{display:flex}
+  .hga-rc-filter:not(.open) .hga-rc-filter-acts{display:none}
+  .hga-rc-league{display:flex;align-items:flex-start;gap:8px;padding:7px 6px;border-radius:8px;font-size:12px;line-height:1.35}
+  .hga-rc-league:nth-child(odd){background:rgba(255,255,255,.03)}
+  .hga-rc-league input{margin-top:2px;flex-shrink:0;width:16px;height:16px}
+  .hga-rc-league .nm{flex:1;word-break:break-all}
+  .hga-rc-league .cnt{opacity:.55;font-size:11px;flex-shrink:0}
+  .hga-rc-league.muted .nm{opacity:.55;text-decoration:line-through}
   .hga-rc-empty{padding:18px 8px;text-align:center;color:rgba(244,247,251,.55);font-size:13px}
   .hga-rc-swipe{position:relative;margin-top:8px;border-radius:12px;overflow:hidden;background:#1a222d}
   .hga-rc-swipe-actions{position:absolute;top:0;right:-76px;bottom:0;width:76px;display:flex;z-index:0;transition:right .18s ease;pointer-events:none}
@@ -701,7 +787,7 @@
   const panel = document.createElement("div");
   panel.className = "hga-rc-panel";
   panel.innerHTML =
-    '<div class="hga-rc-hd"><div><b>红牌监控</b><span class="sub">收起仍监控 · 点开声音 · 左滑删历史</span></div>' +
+    '<div class="hga-rc-hd"><div><b>红牌监控</b><span class="sub">勾选联赛=不提醒 · 收起仍监控</span></div>' +
     '<div class="hga-rc-acts">' +
     '<button type="button" data-act="monitor" class="on">监控开</button>' +
     '<button type="button" data-act="vibrate" class="on">震动开</button>' +
@@ -709,10 +795,19 @@
     '<button type="button" data-act="vol-">音量-</button>' +
     '<button type="button" data-act="vol+">音量+</button>' +
     '<button type="button" data-act="mute">静音</button>' +
+    '<button type="button" data-act="filter">筛选</button>' +
     '<button type="button" data-act="test">测试</button>' +
     '<button type="button" data-act="collapse">收起</button>' +
     "</div></div>" +
     '<div class="hga-rc-body"><div class="hga-rc-status" id="hgaRcStatus">等待滚球数据…保持在滚球页</div>' +
+    '<div class="hga-rc-filter" id="hgaRcFilter">' +
+    '<div class="hga-rc-filter-hd" data-act="filter-toggle"><div><b>联赛筛选</b><div class="tip">勾选后该联赛红牌不提醒</div></div><span class="tip" id="hgaRcFilterSum">0 屏蔽</span></div>' +
+    '<div class="hga-rc-filter-acts">' +
+    '<button type="button" data-act="filter-clear">清空勾选</button>' +
+    '<button type="button" data-act="filter-mute-all">全选屏蔽</button>' +
+    "</div>" +
+    '<div class="hga-rc-filter-list" id="hgaRcFilterList"><div class="hga-rc-empty">等滚球数据后显示联赛</div></div>' +
+    "</div>" +
     '<div id="hgaRcHistory"><div class="hga-rc-empty">暂无红牌记录</div></div></div>';
   document.documentElement.appendChild(panel);
 
@@ -731,6 +826,9 @@
     toastBox,
     status: panel.querySelector("#hgaRcStatus"),
     history: panel.querySelector("#hgaRcHistory"),
+    filter: panel.querySelector("#hgaRcFilter"),
+    filterList: panel.querySelector("#hgaRcFilterList"),
+    filterSum: panel.querySelector("#hgaRcFilterSum"),
   };
 
   function flashPanel() {
@@ -751,8 +849,17 @@
     if (state.vibrateOn) bits.push("震动");
     bits.push("音量 " + state.volume + "/10");
     if (state.muted) bits.push("已静音");
+    if (state.mutedLeagues.size) bits.push("屏蔽 " + state.mutedLeagues.size + " 联赛");
     if (state.alarming) bits.push("报警中");
     ui.status.textContent = bits.join(" · ");
+    if (ui.filterSum) ui.filterSum.textContent = state.mutedLeagues.size + " 屏蔽";
+    const filterBtn = panel.querySelector('[data-act="filter"]');
+    if (filterBtn) {
+      filterBtn.className = state.filterOpen || state.mutedLeagues.size ? "on" : "";
+      filterBtn.textContent = state.mutedLeagues.size
+        ? "筛选(" + state.mutedLeagues.size + ")"
+        : "筛选";
+    }
     const monBtn = panel.querySelector('[data-act="monitor"]');
     if (monBtn) {
       monBtn.textContent = state.monitoring ? "监控开" : "监控关";
@@ -778,6 +885,66 @@
       soundBtn.className = state.muted ? "primary" : "primary on";
     }
   }
+
+  renderLeagueFilter = function (forceRebuild) {
+    if (!ui.filterList) return;
+    if (ui.filter) {
+      if (state.filterOpen) ui.filter.classList.add("open");
+      else ui.filter.classList.remove("open");
+    }
+    if (ui.filterSum) ui.filterSum.textContent = state.mutedLeagues.size + " 屏蔽";
+
+    const list = Array.from(state.leagues.values()).sort(function (a, b) {
+      if (b.count !== a.count) return b.count - a.count;
+      return String(a.name).localeCompare(String(b.name), "zh");
+    });
+
+    const existing = ui.filterList.querySelectorAll("input[data-league]");
+    const canPatch =
+      !forceRebuild &&
+      existing.length &&
+      existing.length === list.length &&
+      list.every(function (info, i) {
+        return existing[i] && existing[i].getAttribute("data-league") === info.key;
+      });
+
+    if (canPatch) {
+      list.forEach(function (info, i) {
+        const row = existing[i].closest(".hga-rc-league");
+        if (!row) return;
+        const cnt = row.querySelector(".cnt");
+        if (cnt) cnt.textContent = info.count ? info.count + "场" : "—";
+        const muted = state.mutedLeagues.has(info.key);
+        existing[i].checked = muted;
+        if (muted) row.classList.add("muted");
+        else row.classList.remove("muted");
+      });
+      return;
+    }
+
+    if (!list.length) {
+      ui.filterList.innerHTML = '<div class="hga-rc-empty">等滚球数据后显示联赛</div>';
+      return;
+    }
+    ui.filterList.innerHTML = list
+      .map(function (info) {
+        const muted = state.mutedLeagues.has(info.key);
+        return (
+          '<label class="hga-rc-league' +
+          (muted ? " muted" : "") +
+          '"><input type="checkbox" data-league="' +
+          escapeHtml(info.key) +
+          '"' +
+          (muted ? " checked" : "") +
+          ' /><span class="nm">' +
+          escapeHtml(info.name) +
+          '</span><span class="cnt">' +
+          (info.count ? info.count + "场" : "—") +
+          "</span></label>"
+        );
+      })
+      .join("");
+  };
 
   function closeAllSwipes(except) {
     ui.history.querySelectorAll(".hga-rc-swipe.open").forEach(function (el) {
@@ -975,12 +1142,32 @@
     unlockSound(false);
   });
 
+  panel.addEventListener("change", function (e) {
+    const box = e.target.closest("input[data-league]");
+    if (!box) return;
+    const key = box.getAttribute("data-league");
+    if (!key) return;
+    if (box.checked) state.mutedLeagues.add(key);
+    else state.mutedLeagues.delete(key);
+    saveMutedLeagues();
+    renderLeagueFilter(true);
+    renderStatus();
+    toast(
+      box.checked
+        ? "已屏蔽：" + ((state.leagues.get(key) && state.leagues.get(key).name) || key)
+        : "已恢复提醒：" + ((state.leagues.get(key) && state.leagues.get(key).name) || key)
+    );
+  });
+
   panel.addEventListener("click", function (e) {
     const del = e.target.closest("[data-del]");
     if (del) {
       e.preventDefault();
       e.stopPropagation();
       deleteHistory(Number(del.getAttribute("data-del")));
+      return;
+    }
+    if (e.target.closest("input[data-league]") || e.target.closest("label.hga-rc-league")) {
       return;
     }
     const hist = e.target.closest("[data-hist]");
@@ -1004,9 +1191,33 @@
       if (item && item.meta) locateMatch(item.meta);
       return;
     }
-    const btn = e.target.closest("button[data-act]");
+    const btn = e.target.closest("[data-act]");
     if (!btn) return;
     const act = btn.getAttribute("data-act");
+    if (act === "filter" || act === "filter-toggle") {
+      state.filterOpen = !state.filterOpen;
+      renderLeagueFilter(true);
+      renderStatus();
+      return;
+    }
+    if (act === "filter-clear") {
+      state.mutedLeagues.clear();
+      saveMutedLeagues();
+      renderLeagueFilter(true);
+      renderStatus();
+      toast("已清空联赛屏蔽");
+      return;
+    }
+    if (act === "filter-mute-all") {
+      state.leagues.forEach(function (_info, key) {
+        state.mutedLeagues.add(key);
+      });
+      saveMutedLeagues();
+      renderLeagueFilter(true);
+      renderStatus();
+      toast("已屏蔽全部当前联赛");
+      return;
+    }
     if (act === "sound") {
       unlockSound(true).then(function (ok) {
         if (ok) {
